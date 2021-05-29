@@ -1,0 +1,32 @@
+name: Find Coinbase
+on: [push]
+jobs:
+  Scrap:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.8
+      options: --network-alias scrapper-host
+    env:
+      SELENIUM_HUB_HOST: hub
+      TEST_HOST: scrapper-host
+    services:
+      hub:
+        image: selenium/hub:3.141.59-gold
+      firefox:
+        image: selenium/node-firefox:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+    steps:
+      - uses: actions/checkout@v2
+      - run: python3 -m venv .venv
+      - run: .venv/bin/python -m pip install wheel
+      - run: .venv/bin/python setup.py install
+      - run: >
+          .venv/bin/python -m kg8-scrap
+          --url https://www.blockchain.com/explorer?utm_campaign=dcomnav_explorer
+          --output coinbase.csv
+      - uses: actions/upload-artifact@v2
+        with:
+          name: Coinbase Results
+          path: coinbase.csv
