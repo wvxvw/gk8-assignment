@@ -23,7 +23,7 @@ jobs:
       - run: .venv/bin/python -m pip install wheel
       - run: .venv/bin/python setup.py install
       - run: >
-          .venv/bin/python -m kg8-scrap
+          .venv/bin/python -m gk8_scrap
           --url https://www.blockchain.com/explorer?utm_campaign=dcomnav_explorer
           --output coinbase.csv
       - uses: actions/upload-artifact@v2

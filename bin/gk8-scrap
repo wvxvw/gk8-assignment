@@ -1,0 +1,8 @@
+#!python
+# -*- mode: python; coding: utf-8 -*-
+
+import sys
+
+from gk8_scrap import main
+
+sys.exit(main(sys.argv[1:]))
