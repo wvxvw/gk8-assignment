@@ -30,7 +30,7 @@ parser.add_argument(
 parser.add_argument(
     '-n',
     '--node',
-    nargs='+',
+    action='append',
     default=[],
     help='''
     Selenium worker node URL
