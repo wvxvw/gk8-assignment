@@ -65,6 +65,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: echo "TEST_HOST $TEST_HOST"
+      - run: ping -c 1 chrome-9
       - run: python3 -m venv .venv
       - run: .venv/bin/python -m pip install wheel
       - run: .venv/bin/python setup.py install
