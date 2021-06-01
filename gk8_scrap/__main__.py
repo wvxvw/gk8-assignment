@@ -5,4 +5,4 @@ import sys
 from . import main
 
 
-sys.exit(main(sis.argv[1:]))
+sys.exit(main(sys.argv[1:]))
