@@ -12,13 +12,59 @@ jobs:
     services:
       hub:
         image: selenium/hub:3.141.59-gold
-      firefox:
-        image: selenium/node-firefox:3.141.59-gold
+      chrome-0:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-1:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-2:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-3:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-4:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-5:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-6:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-7:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-8:
+        image: selenium/node-chrome:3.141.59-gold
+        env:
+          HUB_HOST: hub
+          HUB_PORT: 4444
+      chrome-9:
+        image: selenium/node-chrome:3.141.59-gold
         env:
           HUB_HOST: hub
           HUB_PORT: 4444
     steps:
       - uses: actions/checkout@v2
+      - run: echo "TEST_HOST $TEST_HOST"
       - run: python3 -m venv .venv
       - run: .venv/bin/python -m pip install wheel
       - run: .venv/bin/python setup.py install

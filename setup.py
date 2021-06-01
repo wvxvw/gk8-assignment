@@ -10,7 +10,10 @@ setup(
     author='olegsivokon@gmail.com',
     url='https://github.com/wvxvw/gk8-assignment',
     license='MIT',
-    packages=['gk_scrap'],
+    packages=['gk8_scrap'],
+    install_requires=[
+        'selenium==3.141.0',
+    ],
     scripts=[
         'bin/gk8-scrap',
     ],
