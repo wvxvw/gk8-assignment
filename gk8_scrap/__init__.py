@@ -110,7 +110,13 @@ def main(argsv):
     jobs = Queue()
     is_done = Event()
     workers = [
-        WebDriverProcess(node, sink, jobs, is_done) for node in pargs.node
+        WebDriverProcess(
+            'http://{}:5555/wd/hub'.format(node),
+            sink,
+            jobs,
+            is_done,
+        )
+        for node in pargs.node
     ]
 
     for worker in workers:

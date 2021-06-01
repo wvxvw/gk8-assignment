@@ -3,3 +3,4 @@
 /build/
 /dist/
 /gk8_scrap.egg-info/
+*.pyc
