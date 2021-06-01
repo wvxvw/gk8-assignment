@@ -73,6 +73,16 @@ jobs:
           .venv/bin/python -m gk8_scrap
           --url https://www.blockchain.com/explorer?utm_campaign=dcomnav_explorer
           --output coinbase.csv
+          --node chrome-0
+          --node chrome-1
+          --node chrome-2
+          --node chrome-3
+          --node chrome-4
+          --node chrome-5
+          --node chrome-6
+          --node chrome-7
+          --node chrome-8
+          --node chrome-9
       - uses: actions/upload-artifact@v2
         with:
           name: Coinbase Results
