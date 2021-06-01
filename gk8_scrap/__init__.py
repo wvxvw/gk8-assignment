@@ -2,6 +2,7 @@
 
 import queue
 import time
+import logging
 
 from argparse import ArgumentParser
 from multiprocessing import Process, Queue, Event
@@ -10,6 +11,7 @@ from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
+# TODO(wvxvw): Also configure logging
 parser = ArgumentParser('GK8 blockchain.com scrapper')
 parser.add_argument(
     '-o',
@@ -104,7 +106,7 @@ def update_path(paths, src_tx, tx):
             update_path(v, src_tx, tx)
 
 
-def main(argsv):
+def scrap(argsv):
     pargs = parser.parse_args(argsv)
     sink = Queue()
     jobs = Queue()
@@ -133,3 +135,15 @@ def main(argsv):
             jobs.put_nowait(tx)
         except queue.Empty:
             time.sleep(1)
+
+    is_done.set()
+
+
+def main(argsv):
+    try:
+        scrap(argsv)
+    # TODO(wvxvw): This needs to be more specific about errors
+    except Exception as e:
+        logging.exception(e)
+        return 1
+    return 0
