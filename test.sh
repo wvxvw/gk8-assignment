@@ -16,5 +16,6 @@ done
 python \
     -m gk8_scrap \
     --url 'https://www.blockchain.com/explorer?utm_campaign=dcomnav_explorer' \
-    --output coinbase.csv \
+    --output coinbase.json \
+    --verbosity 20 \
     $NODES

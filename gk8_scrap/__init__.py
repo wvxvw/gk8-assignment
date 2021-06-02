@@ -3,6 +3,7 @@
 import queue
 import time
 import logging
+import json
 
 from argparse import ArgumentParser
 from multiprocessing import Process, Queue, Event
@@ -38,6 +39,15 @@ parser.add_argument(
     Selenium worker node URL
     ''',
 )
+parser.add_argument(
+    '-v',
+    '--verbosity',
+    default=logging.WARNING,
+    type=int,
+    help='''
+    Logging verbosity level. Default 30 (WARNING).
+    ''',
+)
 
 
 def tx_to_url(tx):
@@ -66,9 +76,12 @@ class WebDriverProcess(Process):
             except queue.Empty:
                 time.sleep(self.timeout)
 
-    def process_url(self, url, src_tx):
+    def process_url(self, url):
+        logging.info('Processing: {}'.format(url))
+        src_tx = url.split('/')[-1]
         self.driver.get(url)
         txs = self.find_all_transactions()
+        logging.info('Found {} transactions'.format(len(txs)))
         if not txs:
             self.sink.put((src_tx, 'coinbase'))
         else:
@@ -76,10 +89,19 @@ class WebDriverProcess(Process):
                 self.sink.put((src_tx, tx))
 
     def find_all_transactions(self):
-        pass
+        tx_path = (
+            '//*[@id="__next"]/div[3]/div/div[3]/div/div[3]/'
+            'div[2]/div[1]/div[2]/div/div[1]/div/div/a'
+        )
+        return [
+            a.get_attribute('href').split('/')[-1]
+            for a in self.driver.find_elements_by_xpath(tx_path)
+        ]
 
 
 def all_paths_found(paths):
+    if not paths:
+        return False
     if paths == 'coinbase':
         return True
 
@@ -106,8 +128,28 @@ def update_path(paths, src_tx, tx):
             update_path(v, src_tx, tx)
 
 
+def find_first_tx(node_url, page_url):
+    driver = webdriver.Remote(
+        command_executor=node_url,
+        desired_capabilities=DesiredCapabilities.CHROME,
+    )
+    driver.get(page_url)
+    # This site seriously doesn't want to be scraped
+    tx_path = (
+        '//*[@id="__next"]/div[3]/div/div[5]/div/div[2]'
+        '/div[2]/div/div[2]/div/div[2]/div[1]/div[2]/a'
+    )
+    return driver.find_elements_by_xpath(tx_path)[0].text
+
+
 def scrap(argsv):
     pargs = parser.parse_args(argsv)
+
+    logging.basicConfig(
+        force=True,
+        level=pargs.verbosity,
+    )
+
     sink = Queue()
     jobs = Queue()
     is_done = Event()
@@ -124,19 +166,29 @@ def scrap(argsv):
     for worker in workers:
         worker.start()
 
-    tx = find_first_tx(pargs.node[0], pargs.url)
-    paths = {tx: {}}
-    self.jobs.put_nowait(tx)
+    try:
+        tx = find_first_tx(workers[0].node, pargs.url)
+        paths = {tx: {}}
+        jobs.put_nowait(tx)
+        
+        while not all_paths_found(paths):
+            try:
+                src_tx, tx = sink.get()
+                update_path(paths, src_tx, tx)
+                jobs.put_nowait(tx)
+            except queue.Empty:
+                time.sleep(1)
 
-    while not all_paths_found(paths):
-        try:
-            src_tx, tx = sink.get()
-            update_path(paths, src_tx, tx)
-            jobs.put_nowait(tx)
-        except queue.Empty:
-            time.sleep(1)
-
-    is_done.set()
+        is_done.set()
+        
+        if not pargs.output:
+            print(json.dumps(paths, indent=4))
+        else:
+            with open(pargs.output, 'w') as f:
+                json.dump(paths, f, indent=4)
+    finally:
+        for worker in workers:
+            worker.terminate()
 
 
 def main(argsv):
