@@ -100,32 +100,15 @@ class WebDriverProcess(Process):
 
 
 def all_paths_found(paths):
-    if not paths:
-        return False
-    if paths == 'coinbase':
-        return True
-
-    for k, v in paths.items():
-        if not v:
-            return False
-        if isinstance(v, dict):
-            for sk, sv in v.items():
-                if not all_paths_found(sv):
-                    return False
-
-    return True
+    return all(paths.values())
 
 
 def update_path(paths, src_tx, tx):
-    for k, v in paths.items():
-        if k == src_tx:
-            if tx == 'coinbase':
-                paths[k] = tx
-            else:
-                v[tx] = {}
-            break
-        elif isinstance(v, dict):
-            update_path(v, src_tx, tx)
+    paths[src_tx] = tx
+    if tx not in paths:
+        paths[tx] = None
+        return True
+    return False
 
 
 def find_first_tx(node_url, page_url):
@@ -168,14 +151,15 @@ def scrap(argsv):
 
     try:
         tx = find_first_tx(workers[0].node, pargs.url)
-        paths = {tx: {}}
+        paths = {tx: None}
         jobs.put_nowait(tx)
         
         while not all_paths_found(paths):
             try:
                 src_tx, tx = sink.get()
-                update_path(paths, src_tx, tx)
-                jobs.put_nowait(tx)
+
+                if update_path(paths, src_tx, tx):
+                    jobs.put_nowait(tx)
             except queue.Empty:
                 time.sleep(1)
 
