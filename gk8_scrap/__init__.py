@@ -159,7 +159,8 @@ def scrap(argsv):
                 src_tx, tx = sink.get()
 
                 if update_path(paths, src_tx, tx):
-                    jobs.put_nowait(tx)
+                    if tx != 'coinbase':
+                        jobs.put_nowait(tx)
             except queue.Empty:
                 time.sleep(1)
 
