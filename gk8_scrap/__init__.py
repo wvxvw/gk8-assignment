@@ -10,6 +10,10 @@ from multiprocessing import Process, Queue, Event
 
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 
 
 # TODO(wvxvw): Also configure logging
@@ -23,11 +27,11 @@ parser.add_argument(
     ''',
 )
 parser.add_argument(
-    '-u',
-    '--url',
+    '-t',
+    '--transaction',
     required=True,
     help='''
-    URL of the blockchain.com to start from
+    The transaction to start from
     ''',
 )
 parser.add_argument(
@@ -69,6 +73,7 @@ class WebDriverProcess(Process):
             command_executor=self.node,
             desired_capabilities=DesiredCapabilities.CHROME,
         )
+        self.driver.maximize_window()
         while not self.is_done.is_set():
             try:
                 tx = self.jobs.get_nowait()
@@ -89,6 +94,36 @@ class WebDriverProcess(Process):
                 self.sink.put((src_tx, tx))
 
     def find_all_transactions(self):
+        extras_path = (
+            '/html/body/div[1]/div[3]/div/div[3]/div/div[3]/'
+            'div[2]/div[1]/div[2]/div/div[2]/a'
+        )
+        while True:
+            expand = self.driver.find_elements_by_xpath(extras_path)
+            if expand:
+                message = expand[0].text
+                remaining = int(message.split()[-2][1:])
+                logging.info('Expanding: {}'.format(message))
+                elt = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable(
+                        (By.XPATH, extras_path),
+                    ))
+                actions = ActionChains(self.driver)
+                desired_y = (elt.size['height'] / 2) + elt.location['y']
+                middle = self.driver.execute_script('return window.innerHeight') / 2
+                current_y = middle + self.driver.execute_script('return window.pageYOffset')
+                scroll_y_by = desired_y - current_y
+                self.driver.execute_script('window.scrollBy(0, arguments[0]);', scroll_y_by)
+                actions.click(elt).perform()
+                remaining -= 10
+                if remaining > 0:
+                    WebDriverWait(self.driver, 10).until(
+                        EC.text_to_be_present_in_element(
+                            (By.XPATH, extras_path),
+                            'Load more inputs... ({} remaining)'.format(remaining),
+                        ))
+            else:
+                break
         tx_path = (
             '//*[@id="__next"]/div[3]/div/div[3]/div/div[3]/'
             'div[2]/div[1]/div[2]/div/div[1]/div/div/a'
@@ -109,20 +144,6 @@ def update_path(paths, src_tx, tx):
         paths[tx] = None
         return True
     return False
-
-
-def find_first_tx(node_url, page_url):
-    driver = webdriver.Remote(
-        command_executor=node_url,
-        desired_capabilities=DesiredCapabilities.CHROME,
-    )
-    driver.get(page_url)
-    # This site seriously doesn't want to be scraped
-    tx_path = (
-        '//*[@id="__next"]/div[3]/div/div[5]/div/div[2]'
-        '/div[2]/div/div[2]/div/div[2]/div[1]/div[2]/a'
-    )
-    return driver.find_elements_by_xpath(tx_path)[0].text
 
 
 def scrap(argsv):
@@ -150,9 +171,8 @@ def scrap(argsv):
         worker.start()
 
     try:
-        tx = find_first_tx(workers[0].node, pargs.url)
-        paths = {tx: None}
-        jobs.put_nowait(tx)
+        paths = {pargs.transaction: None}
+        jobs.put_nowait(pargs.transaction)
         
         while not all_paths_found(paths):
             try:

@@ -71,8 +71,9 @@ jobs:
       - run: .venv/bin/python setup.py install
       - run: >
           .venv/bin/python -m gk8_scrap
-          --url https://www.blockchain.com/explorer?utm_campaign=dcomnav_explorer
+          --transaction 478ed0065aeab602fedba0d1d87dc6c901f7a91a2ba7a7710563cde906ea5846
           --output coinbase.csv
+          --verbosity 20
           --node chrome-0
           --node chrome-1
           --node chrome-2
